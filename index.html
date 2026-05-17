@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Security Gateway | Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f1a;
+            --card-bg: #161b2c;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --text: #ffffff;
+            --text-dim: #94a3b8;
+            --border: #2d3748;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 300px;
+            height: 300px;
+            background: var(--accent-glow);
+            filter: blur(100px);
+            z-index: -1;
+            opacity: 0.2;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        .input-section {
+            margin-bottom: 2rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            color: white;
+            font-family: inherit;
+            font-size: 1.1rem;
+            resize: none;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: #334155;
+            color: white;
+            max-width: 200px;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Results Display */
+        .results-panel {
+            margin-top: 3rem;
+            border-top: 1px solid var(--border);
+            padding-top: 2rem;
+            display: none; /* Controlled by JS */
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .decision-box {
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        .decision-allow { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid var(--success); }
+        .decision-mask { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid var(--warning); }
+        .decision-block { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .output-box {
+            background: #0f172a;
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .output-box h3 {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .output-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .flags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .flag-tag {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .loader {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .footer-links {
+            margin-top: 2rem;
+            text-align: center;
+        }
+        
+        .footer-links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin: 0 1rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .footer-links a:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Security Gateway</h1>
+            <p>Advanced Multilingual LLM Protection</p>
+        </div>
+
+        <div class="input-section">
+            <textarea id="promptInput" placeholder="Enter prompt to analyze..."></textarea>
+            <div class="btn-container" style="margin-top: 1.5rem;">
+                <button id="analyzeBtn" class="btn-primary" onclick="handleAnalyze()">
+                    <span>Analyze Prompt</span>
+                    <div id="loader" class="loader"></div>
+                </button>
+                <button class="btn-secondary" onclick="document.getElementById('promptInput').value=''">Clear</button>
+            </div>
+        </div>
+
+        <div id="resultsPanel" class="results-panel">
+            <div class="status-header">
+                <h2 style="font-weight: 500;">Security Decision</h2>
+                <div id="decisionBadge" class="decision-box">ALLOW</div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="riskVal">0.00</div>
+                    <div class="metric-label">Final Risk</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="ruleVal">0.00</div>
+                    <div class="metric-label">Rule Score</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="aiVal">0.00</div>
+                    <div class="metric-label">Semantic Score</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="latencyVal">0ms</div>
+                    <div class="metric-label">Latency</div>
+                </div>
+            </div>
+
+            <div class="output-box">
+                <h3>Safe Output Text</h3>
+                <div id="outputText" class="output-text">Text will appear here...</div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <h3 style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 0.75rem; text-transform: uppercase;">Detection Flags</h3>
+                <div id="flagsContainer" class="flags-container">
+                    <!-- Flags will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-links">
+            <a href="/docs">API Documentation (Swagger)</a>
+            <a href="/redoc">API Documentation (ReDoc)</a>
+        </div>
+    </div>
+
+    <script>
+        async function handleAnalyze() {
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) return;
+
+            const btn = document.getElementById('analyzeBtn');
+            const loader = document.getElementById('loader');
+            const panel = document.getElementById('resultsPanel');
+
+            // UI State
+            btn.disabled = true;
+            loader.style.display = 'block';
+            panel.style.opacity = '0.5';
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        input_id: "gui_" + Date.now(),
+                        prompt: prompt
+                    })
+                });
+
+                if (!response.ok) throw new Error('Gateway Error: ' + response.statusText);
+
+                const data = await response.json();
+                console.log("Analysis Result:", data);
+
+                // Update metrics
+                document.getElementById('riskVal').textContent = data.final_risk.toFixed(2);
+                document.getElementById('ruleVal').textContent = data.rule_score.toFixed(2);
+                document.getElementById('aiVal').textContent = data.semantic_score.toFixed(2);
+                document.getElementById('latencyVal').textContent = data.latency_ms + 'ms';
+
+                // Update Decision Badge
+                const badge = document.getElementById('decisionBadge');
+                badge.textContent = data.decision;
+                badge.className = 'decision-box'; // reset
+                if (data.decision === 'ALLOW') badge.classList.add('decision-allow');
+                else if (data.decision === 'MASK') badge.classList.add('decision-mask');
+                else badge.classList.add('decision-block');
+
+                // Update Output Text
+                const outputText = document.getElementById('outputText');
+                if (data.decision === 'BLOCK') {
+                    outputText.textContent = "ATTENTION: This prompt was BLOCKED due to security policy violations.";
+                    outputText.style.color = '#ef4444';
+                    outputText.style.fontWeight = '600';
+                } else {
+                    outputText.textContent = data.safe_text || prompt;
+                    outputText.style.color = '#ffffff';
+                    outputText.style.fontWeight = '400';
+                }
+
+                // Update Flags
+                const flagsCont = document.getElementById('flagsContainer');
+                flagsCont.innerHTML = '';
+                const allFlags = [...(data.reason_codes || [])];
+                
+                // Add PII flags if any
+                if (data.pii_entities && data.pii_entities.length > 0) {
+                    data.pii_entities.forEach(e => allFlags.push("PII: " + e.entity_type));
+                }
+
+                if (allFlags.length === 0) {
+                    flagsCont.innerHTML = '<div class="flag-tag">No threats detected</div>';
+                } else {
+                    [...new Set(allFlags)].forEach(flag => {
+                        const div = document.createElement('div');
+                        div.className = 'flag-tag';
+                        div.textContent = flag;
+                        flagsCont.appendChild(div);
+                    });
+                }
+
+                // Show panel
+                panel.style.display = 'block';
+                panel.style.opacity = '1';
+                panel.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                console.error(err);
+                alert("Failed to connect to security gateway. Ensure server is running at localhost:8000");
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

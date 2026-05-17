@@ -1,0 +1,29 @@
+# Gateway Configuration
+
+# Thresholds and Weights
+policy:
+  rule_weight: 1.0
+  semantic_weight: 1.0
+  pii_weight: 0.5
+  secret_weight: 1.0
+  # final_risk = max(rule_score * rule_weight, semantic_score * semantic_weight) + pii_score * pii_weight + secret_score * secret_weight
+  
+  # Thresholds
+  block_threshold: 0.8
+  mask_threshold: 0.1 # Any PII detected will trigger mask if overall risk < block_threshold
+
+# Presidio Anonymizer Custom Recognizer Weights
+pii:
+  cnic_score_context_multiplier: 1.2
+  api_key_score_context_multiplier: 1.5
+
+# Semantic Model Configuration
+semantic:
+  model_name: "all-MiniLM-L6-v2"
+  similarity_threshold: 0.75 # Cosine similarity threshold to consider it a malicious match
+
+# Languages Supported
+languages:
+  - en # English
+  - ur # Urdu
+  - ko # Korean
